@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Hand Gesture Recognition Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(18, 24, 38, 0.85);
+      --bg-card-hover: rgba(26, 35, 54, 0.95);
+      --border-color: rgba(56, 189, 248, 0.15);
+      --border-glow: rgba(56, 189, 248, 0.4);
+      --primary: #38bdf8;
+      --primary-dark: #0284c7;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #172554 0%, #090d16 65%, #030712 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      backdrop-filter: blur(12px);
+      background: rgba(9, 13, 22, 0.75);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      font-size: 1.8rem;
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 30%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--accent-green);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 1.75rem;
+    }
+
+    @media (max-width: 992px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .stream-container {
+      position: relative;
+      border-radius: 0.875rem;
+      overflow: hidden;
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 4/3;
+    }
+
+    .stream-feed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .stream-controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.625rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Prediction cards */
+    .metric-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .gesture-hero {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .hero-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-gesture {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+      margin-bottom: 0.75rem;
+      min-height: 3.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-bar-wrap {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      height: 8px;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8 0%, #10b981 100%);
+      border-radius: 9999px;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .stat-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.75rem;
+      padding: 1rem;
+    }
+
+    .stat-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Image upload section */
+    .upload-card {
+      margin-top: 1.25rem;
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 0.875rem;
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .upload-card:hover {
+      border-color: var(--primary);
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .gesture-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+
+    .gesture-tag {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.375rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      backdrop-filter: blur(8px);
+      background: rgba(9, 13, 22, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-icon">🤟</span>
+      <div>
+        <div class="brand-title">Hand Gesture Studio</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Powered by Google MediaPipe Tasks Vision</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <span class="badge-live"><span class="pulse-dot"></span> Web Live Stream</span>
+      <span id="fps-counter" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--primary);">FPS: --</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Video Feed -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span>📹</span> Live Camera Feed</div>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">640 × 480 • 21 Landmarks</span>
+      </div>
+
+      <div class="stream-container">
+        <img id="videoFeed" class="stream-feed" src="/video_feed" alt="Camera Stream" onerror="handleStreamError()">
+      </div>
+
+      <div class="stream-controls">
+        <button class="btn btn-primary" onclick="refreshFeed()">🔄 Refresh Feed</button>
+        <button class="btn btn-secondary" onclick="toggleCamera()">📷 Camera Settings</button>
+      </div>
+
+      <!-- Static Image Upload -->
+      <div class="upload-card" onclick="document.getElementById('imageInput').click()">
+        <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="uploadImage(event)">
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📸</div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Test Static Image</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Click to upload any hand photo for instant gesture prediction</div>
+      </div>
+    </div>
+
+    <!-- Right Column: Recognition Metrics -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span>⚡</span> Real-Time Prediction</div>
+        <span id="systemStatus" style="font-size: 0.8rem; color: var(--accent-green);">Inference Active</span>
+      </div>
+
+      <div class="metric-panel">
+        <!-- Hero Card -->
+        <div class="gesture-hero">
+          <div class="hero-label">Recognized Gesture</div>
+          <div id="gestureName" class="hero-gesture">Detecting...</div>
+          <div class="progress-bar-wrap">
+            <div id="confidenceBar" class="progress-bar-fill"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+            <span>Confidence Score</span>
+            <span id="confidenceText" style="font-weight: 700; color: var(--primary);">0.0%</span>
+          </div>
+        </div>
+
+        <!-- Stat Grid -->
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-title">Handedness</div>
+            <div id="handednessVal" class="stat-val">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">Hands Detected</div>
+            <div id="handsCountVal" class="stat-val">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">Inference Engine</div>
+            <div class="stat-val" style="font-size: 1rem; color: #38bdf8;">TFLite CPU</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">Latency</div>
+            <div id="latencyVal" class="stat-val" style="font-size: 1rem;">~25 ms</div>
+          </div>
+        </div>
+
+        <!-- Supported Labels -->
+        <div style="margin-top: 0.5rem;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">
+            SUPPORTED GESTURES (7 OFFICIAL + UNKNOWN):
+          </div>
+          <div class="gesture-tags">
+            <span class="gesture-tag">✊ Closed Fist</span>
+            <span class="gesture-tag">✋ Open Palm</span>
+            <span class="gesture-tag">☝️ Pointing Up</span>
+            <span class="gesture-tag">👎 Thumb Down</span>
+            <span class="gesture-tag">👍 Thumb Up</span>
+            <span class="gesture-tag">✌️ Victory</span>
+            <span class="gesture-tag">🤟 I Love You</span>
+            <span class="gesture-tag">❓ Unknown Gesture</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>Local Desktop Web Server • <code>http://localhost:5000</code></span>
+    <span>Google MediaPipe Vision • Float16 Bundle</span>
+  </footer>
+
+  <script>
+    function refreshFeed() {
+      const feed = document.getElementById('videoFeed');
+      feed.src = '/video_feed?t=' + new Date().getTime();
+    }
+
+    function handleStreamError() {
+      document.getElementById('systemStatus').innerText = 'Stream Disconnected';
+      document.getElementById('systemStatus').style.color = '#ef4444';
+    }
+
+    function toggleCamera() {
+      alert("Camera is streaming directly from laptop webcam index 0. You can also upload test images below!");
+    }
+
+    // Poll live predictions from backend API
+    async function pollStats() {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('gestureName').innerText = data.display_name || 'No hand detected';
+          document.getElementById('confidenceText').innerText = (data.confidence * 100).toFixed(1) + '%';
+          document.getElementById('confidenceBar').style.width = (data.confidence * 100) + '%';
+          document.getElementById('handednessVal').innerText = data.handedness || 'None';
+          document.getElementById('handsCountVal').innerText = data.num_hands || '0';
+          document.getElementById('fps-counter').innerText = 'FPS: ' + (data.fps || 0).toFixed(1);
+        }
+      } catch (err) {
+        // silent catch
+      }
+    }
+    setInterval(pollStats, 200);
+
+    // Static image upload handler
+    async function uploadImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      document.getElementById('gestureName').innerText = 'Processing...';
+
+      try {
+        const res = await fetch('/api/predict_image', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('gestureName').innerText = data.display_name;
+          document.getElementById('confidenceText').innerText = (data.confidence * 100).toFixed(1) + '%';
+          document.getElementById('confidenceBar').style.width = (data.confidence * 100) + '%';
+          document.getElementById('handednessVal').innerText = data.handedness;
+          document.getElementById('handsCountVal').innerText = data.num_hands;
+          alert(`Image Prediction:\nGesture: ${data.display_name}\nConfidence: ${(data.confidence*100).toFixed(1)}%\nHandedness: ${data.handedness}`);
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (e) {
+        alert('Upload failed: ' + e);
+      }
+    }
+  </script>
+</body>
+</html>
