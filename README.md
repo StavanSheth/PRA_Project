@@ -1,28 +1,18 @@
-# Live Hand Gesture Recognition Desktop Application
+# Live Multi-Model Vision Studio (MediaPipe & YOLOv8)
 
-A lightweight, real-time desktop application built in Python and native Tkinter that recognizes hand gestures using Google's pretrained MediaPipe Gesture Recognizer model (`gesture_recognizer.task`).
-
-The application runs entirely locally on CPU inference using OpenCV for camera streaming and MediaPipe Tasks Vision in asynchronous `LIVE_STREAM` mode.
+A lightweight, real-time computer vision application supporting both **Google MediaPipe Hand Gesture Recognition** and **Ultralytics YOLOv8 Nano (`yolov8n.pt`) Object Detection**, available as both an interactive web dashboard and a native desktop GUI.
 
 ---
 
 ## 🚀 Key Features
 
-- **Live Camera Feed**: Captures laptop webcam feed with horizontal mirroring for natural interaction.
-- **Skeletal Hand Landmarks & Bounding Boxes**: Automatically tracks and overlays 21 joint positions, skeletal connections, and bounding boxes in real time.
-- **Official Gesture Recognition**: Supports Google's official MediaPipe gesture labels:
-  - `Closed_Fist` (✊)
-  - `Open_Palm` (✋)
-  - `Pointing_Up` (☝️)
-  - `Thumb_Down` (👎)
-  - `Thumb_Up` (👍)
-  - `Victory` (✌️)
-  - `ILoveYou` (🤟)
-  - `Unknown gesture` (hand present but gesture unrecognized / "None")
-  - `No hand detected` (no hand in frame)
-- **Detailed Prediction Panel**: Real-time display of recognized gesture, confidence score with progress bar, handedness (Left/Right), detected hand count, and inference state.
-- **Prediction Smoothing**: Optional rolling window majority voting (5 frames) to eliminate visual flicker while preserving raw debugging capability.
-- **Safe Lifecycle & Resource Management**: Clean startup and shutdown; camera hardware is cleanly released (`cap.release()`) and MediaPipe recognizer is closed safely.
+- **Multi-Model Pipeline Selection**:
+  - **Model A: Google MediaPipe Gesture Recognizer** (`models/gesture_recognizer.task`): Tracks 21 3D hand landmarks, finger skeletal bonds, and classifies 7 official hand gestures.
+  - **Model B: Ultralytics YOLOv8 Nano** (`yolov8n.pt`): Detects 80 real-world object classes (people, vehicles, animals, accessories, electronics, food, furniture, etc.) with real-time bounding boxes and confidence scores.
+- **Interactive Start & Stop Controls**: Pause or resume the camera feed on the fly directly from the web interface without restarting the server.
+- **Live Camera Stream**: Real-time webcam streaming with horizontal mirroring and smooth overlay rendering.
+- **Static Image Analysis**: Upload any photo from your machine to get immediate predictions from whichever model is currently active.
+- **Safe Lifecycle & Resource Management**: Clean camera release and non-blocking inference.
 
 ---
 
@@ -81,28 +71,9 @@ python -m unittest discover tests
 ```
 *Note: On first execution, the test suite or application will automatically download `models/gesture_recognizer.task` (~8.3 MB) from Google's official Cloud Storage bucket.*
 
-### 4. Launch Options
-
-#### Option A: One-Click Desktop Icon (Recommended)
-Double-click the **Hand Gesture Studio** icon directly on your Windows Desktop!
-- Silently launches the Python backend in the background (no console popups).
-- Opens Google Chrome in standalone app mode (`--app=http://localhost:5000`) without browser tabs or URL bars.
-- Automatically stops the backend server and releases your webcam when the window is closed.
-
-*If you need to re-create the desktop shortcut:*
-```powershell
-python scripts/create_desktop_shortcut.py
-```
-
-#### Option B: Standalone Desktop Window (Tkinter)
+### 4. Launch Application
 ```powershell
 python main.py
-```
-
-#### Option C: Manual Web Server
-```powershell
-python server.py
-# Access at http://localhost:5000
 ```
 
 ---

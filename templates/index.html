@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Hand Gesture Recognition Studio</title>
+  <title>Multi-Model Vision Studio • MediaPipe & YOLOv8</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -11,7 +11,6 @@
     :root {
       --bg-dark: #090d16;
       --bg-card: rgba(18, 24, 38, 0.85);
-      --bg-card-hover: rgba(26, 35, 54, 0.95);
       --border-color: rgba(56, 189, 248, 0.15);
       --border-glow: rgba(56, 189, 248, 0.4);
       --primary: #38bdf8;
@@ -40,15 +39,17 @@
 
     header {
       backdrop-filter: blur(12px);
-      background: rgba(9, 13, 22, 0.75);
+      background: rgba(9, 13, 22, 0.85);
       border-bottom: 1px solid var(--border-color);
-      padding: 1rem 2rem;
+      padding: 0.85rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 50;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
 
     .brand {
@@ -70,18 +71,54 @@
       -webkit-text-fill-color: transparent;
     }
 
+    /* Model Selector Buttons */
+    .model-selector {
+      display: flex;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+      padding: 0.3rem;
+      gap: 0.35rem;
+    }
+
+    .model-tab {
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .model-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .model-tab.active {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     .badge-live {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       background: rgba(16, 185, 129, 0.15);
       border: 1px solid rgba(16, 185, 129, 0.4);
       color: var(--accent-green);
-      padding: 0.25rem 0.75rem;
+      padding: 0.3rem 0.85rem;
       border-radius: 9999px;
       font-size: 0.8rem;
       font-weight: 600;
-      letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
@@ -101,12 +138,12 @@
 
     main {
       flex: 1;
-      padding: 2rem;
+      padding: 1.75rem 2rem;
       max-width: 1400px;
       width: 100%;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
+      grid-template-columns: 1.4fr 1fr;
       gap: 1.75rem;
     }
 
@@ -162,15 +199,16 @@
       display: block;
     }
 
-    .stream-controls {
-      display: flex;
+    /* Start / Stop Controls */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 0.75rem;
       margin-top: 1rem;
     }
 
     .btn {
-      flex: 1;
-      padding: 0.75rem 1.25rem;
+      padding: 0.75rem 1rem;
       border-radius: 0.625rem;
       font-size: 0.95rem;
       font-weight: 600;
@@ -178,34 +216,42 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: 0.45rem;
       transition: all 0.2s ease;
-      text-decoration: none;
       border: none;
+      font-family: inherit;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    .btn-start {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #ffffff;
-      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
     }
-
-    .btn-primary:hover {
-      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.45);
+    .btn-start:hover {
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
       transform: translateY(-1px);
     }
 
-    .btn-secondary {
+    .btn-stop {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+    }
+    .btn-stop:hover {
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-refresh {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.15);
       color: var(--text-main);
     }
-
-    .btn-secondary:hover {
+    .btn-refresh:hover {
       background: rgba(255, 255, 255, 0.12);
     }
 
-    /* Prediction cards */
+    /* Prediction Metrics Panel */
     .metric-panel {
       display: flex;
       flex-direction: column;
@@ -218,6 +264,7 @@
       border-radius: 1rem;
       padding: 1.5rem;
       text-align: center;
+      position: relative;
     }
 
     .hero-label {
@@ -229,7 +276,7 @@
     }
 
     .hero-gesture {
-      font-size: 2.25rem;
+      font-size: 2.15rem;
       font-weight: 800;
       color: #38bdf8;
       text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
@@ -238,6 +285,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      word-break: break-word;
     }
 
     .progress-bar-wrap {
@@ -284,9 +332,9 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Image upload section */
+    /* Upload & Labels list */
     .upload-card {
-      margin-top: 1.25rem;
+      margin-top: 1rem;
       border: 1px dashed rgba(56, 189, 248, 0.3);
       background: rgba(15, 23, 42, 0.4);
       border-radius: 0.875rem;
@@ -305,12 +353,15 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.4rem;
-      margin-top: 1rem;
+      max-height: 160px;
+      overflow-y: auto;
+      margin-top: 0.6rem;
+      padding-right: 4px;
     }
 
     .gesture-tag {
       font-size: 0.75rem;
-      padding: 0.3rem 0.6rem;
+      padding: 0.25rem 0.55rem;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 0.375rem;
@@ -319,13 +370,15 @@
 
     footer {
       border-top: 1px solid var(--border-color);
-      padding: 1rem 2rem;
+      padding: 0.85rem 2rem;
       display: flex;
       justify-content: space-between;
       color: var(--text-muted);
       font-size: 0.85rem;
       backdrop-filter: blur(8px);
       background: rgba(9, 13, 22, 0.6);
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
   </style>
 </head>
@@ -333,56 +386,75 @@
 
   <header>
     <div class="brand">
-      <span class="brand-icon">🤟</span>
+      <span class="brand-icon">⚡</span>
       <div>
-        <div class="brand-title">Hand Gesture Studio</div>
-        <div style="font-size: 0.75rem; color: var(--text-muted);">Powered by Google MediaPipe Tasks Vision</div>
+        <div class="brand-title">Multi-Model Vision Studio</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Google MediaPipe & Ultralytics YOLOv8</div>
       </div>
     </div>
+
+    <!-- Model Switcher Buttons -->
+    <div class="model-selector">
+      <button id="btnTabMediapipe" class="model-tab active" onclick="switchModel('mediapipe')">
+        <span>🤟</span> MediaPipe Hand Gestures
+      </button>
+      <button id="btnTabYolo" class="model-tab" onclick="switchModel('yolov8')">
+        <span>🎯</span> YOLOv8n Object Detection
+      </button>
+    </div>
+
     <div style="display: flex; gap: 1rem; align-items: center;">
-      <span class="badge-live"><span class="pulse-dot"></span> Web Live Stream</span>
-      <span id="fps-counter" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--primary);">FPS: --</span>
+      <span id="cameraStatusBadge" class="badge-live"><span class="pulse-dot"></span> Camera Active</span>
+      <span id="fpsCounter" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--primary);">FPS: --</span>
     </div>
   </header>
 
   <main>
-    <!-- Left Column: Video Feed -->
+    <!-- Left Column: Video Feed & Controls -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><span>📹</span> Live Camera Feed</div>
-        <span style="font-size: 0.8rem; color: var(--text-muted);">640 × 480 • 21 Landmarks</span>
+        <div class="card-title"><span>📹</span> <span id="feedTitle">Live Camera Stream</span></div>
+        <span id="feedSubtitle" style="font-size: 0.8rem; color: var(--text-muted);">640 × 480 • 21 Hand Landmarks</span>
       </div>
 
       <div class="stream-container">
         <img id="videoFeed" class="stream-feed" src="/video_feed" alt="Camera Stream" onerror="handleStreamError()">
       </div>
 
-      <div class="stream-controls">
-        <button class="btn btn-primary" onclick="refreshFeed()">🔄 Refresh Feed</button>
-        <button class="btn btn-secondary" onclick="toggleCamera()">📷 Camera Settings</button>
+      <!-- Controls: Start / Stop / Refresh -->
+      <div class="controls-grid">
+        <button id="btnStart" class="btn btn-start" onclick="controlCamera('start')">
+          <span>▶</span> Start Camera
+        </button>
+        <button id="btnStop" class="btn btn-stop" onclick="controlCamera('stop')">
+          <span>⏹</span> Stop Camera
+        </button>
+        <button class="btn btn-refresh" onclick="refreshFeed()">
+          <span>🔄</span> Refresh Feed
+        </button>
       </div>
 
       <!-- Static Image Upload -->
       <div class="upload-card" onclick="document.getElementById('imageInput').click()">
         <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="uploadImage(event)">
         <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📸</div>
-        <div style="font-weight: 600; font-size: 0.9rem;">Test Static Image</div>
-        <div style="font-size: 0.75rem; color: var(--text-muted);">Click to upload any hand photo for instant gesture prediction</div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Test Static Image With Selected Model</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Click to upload an image for immediate inference</div>
       </div>
     </div>
 
     <!-- Right Column: Recognition Metrics -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><span>⚡</span> Real-Time Prediction</div>
+        <div class="card-title"><span>⚡</span> <span id="panelTitle">Real-Time Prediction</span></div>
         <span id="systemStatus" style="font-size: 0.8rem; color: var(--accent-green);">Inference Active</span>
       </div>
 
       <div class="metric-panel">
         <!-- Hero Card -->
         <div class="gesture-hero">
-          <div class="hero-label">Recognized Gesture</div>
-          <div id="gestureName" class="hero-gesture">Detecting...</div>
+          <div id="heroLabel" class="hero-label">Recognized Gesture</div>
+          <div id="heroOutput" class="hero-gesture">Detecting...</div>
           <div class="progress-bar-wrap">
             <div id="confidenceBar" class="progress-bar-fill"></div>
           </div>
@@ -392,40 +464,23 @@
           </div>
         </div>
 
-        <!-- Stat Grid -->
+        <!-- Dynamic Stat Grid -->
         <div class="stat-grid">
           <div class="stat-box">
-            <div class="stat-title">Handedness</div>
-            <div id="handednessVal" class="stat-val">--</div>
+            <div id="stat1Label" class="stat-title">Handedness</div>
+            <div id="stat1Val" class="stat-val">--</div>
           </div>
           <div class="stat-box">
-            <div class="stat-title">Hands Detected</div>
-            <div id="handsCountVal" class="stat-val">--</div>
+            <div id="stat2Label" class="stat-title">Detected Hands</div>
+            <div id="stat2Val" class="stat-val">--</div>
           </div>
           <div class="stat-box">
-            <div class="stat-title">Inference Engine</div>
-            <div class="stat-val" style="font-size: 1rem; color: #38bdf8;">TFLite CPU</div>
+            <div class="stat-title">Active Model</div>
+            <div id="activeModelVal" class="stat-val" style="font-size: 0.95rem; color: #38bdf8;">MediaPipe</div>
           </div>
           <div class="stat-box">
-            <div class="stat-title">Latency</div>
-            <div id="latencyVal" class="stat-val" style="font-size: 1rem;">~25 ms</div>
-          </div>
-        </div>
-
-        <!-- Supported Labels -->
-        <div style="margin-top: 0.5rem;">
-          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">
-            SUPPORTED GESTURES (7 OFFICIAL + UNKNOWN):
-          </div>
-          <div class="gesture-tags">
-            <span class="gesture-tag">✊ Closed Fist</span>
-            <span class="gesture-tag">✋ Open Palm</span>
-            <span class="gesture-tag">☝️ Pointing Up</span>
-            <span class="gesture-tag">👎 Thumb Down</span>
-            <span class="gesture-tag">👍 Thumb Up</span>
-            <span class="gesture-tag">✌️ Victory</span>
-            <span class="gesture-tag">🤟 I Love You</span>
-            <span class="gesture-tag">❓ Unknown Gesture</span>
+            <div class="stat-title">Model Weights</div>
+            <div id="modelPathVal" class="stat-val" style="font-size: 0.75rem; word-break: break-all; color: var(--text-muted);">gesture_recognizer.task</div>
           </div>
         </div>
       </div>
@@ -433,11 +488,86 @@
   </main>
 
   <footer>
-    <span>Local Desktop Web Server • <code>http://localhost:5000</code></span>
-    <span>Google MediaPipe Vision • Float16 Bundle</span>
+    <span>Local Vision Server • <code>http://localhost:5000</code></span>
+    <span>Models: <code>gesture_recognizer.task</code> & <code>yolov8n.pt</code></span>
   </footer>
 
   <script>
+    let currentModel = 'mediapipe';
+    let isCameraRunning = true;
+
+    // Switch between MediaPipe and YOLOv8
+    async function switchModel(model) {
+      currentModel = model;
+      applyModelUI(model);
+
+      try {
+        const res = await fetch('/api/model/select', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({model: model})
+        });
+        const data = await res.json();
+        if (data.success) {
+          console.log("Model switched successfully to:", data.active_model);
+        }
+      } catch (err) {
+        console.error("Failed to switch model on server", err);
+      }
+    }
+
+    function applyModelUI(model) {
+      document.getElementById('btnTabMediapipe').classList.toggle('active', model === 'mediapipe');
+      document.getElementById('btnTabYolo').classList.toggle('active', model === 'yolov8');
+
+      if (model === 'mediapipe') {
+        document.getElementById('feedSubtitle').innerText = '640 × 480 • Hand Landmarks';
+        document.getElementById('heroLabel').innerText = 'Recognized Gesture';
+        document.getElementById('stat1Label').innerText = 'Handedness';
+        document.getElementById('stat2Label').innerText = 'Detected Hands';
+        document.getElementById('activeModelVal').innerText = 'MediaPipe';
+        document.getElementById('modelPathVal').innerText = 'gesture_recognizer.task';
+      } else {
+        document.getElementById('feedSubtitle').innerText = '640 × 480 • Object Detection';
+        document.getElementById('heroLabel').innerText = 'Top Detected Object';
+        document.getElementById('stat1Label').innerText = 'Total Objects';
+        document.getElementById('stat2Label').innerText = 'Top Class';
+        document.getElementById('activeModelVal').innerText = 'YOLOv8 Nano';
+        document.getElementById('modelPathVal').innerText = 'yolov8n.pt';
+      }
+    }
+
+    // Start / Stop camera control
+    async function controlCamera(action) {
+      try {
+        const res = await fetch('/api/camera/control', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: action})
+        });
+        const data = await res.json();
+        isCameraRunning = data.camera_active;
+        updateCameraUI(isCameraRunning);
+      } catch (err) {
+        alert("Camera control failed: " + err);
+      }
+    }
+
+    function updateCameraUI(active) {
+      const badge = document.getElementById('cameraStatusBadge');
+      if (active) {
+        badge.innerHTML = '<span class="pulse-dot"></span> Camera Active';
+        badge.style.color = '#10b981';
+        badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+      } else {
+        badge.innerHTML = '<span>⏸</span> Camera Paused';
+        badge.style.color = '#f59e0b';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      }
+    }
+
     function refreshFeed() {
       const feed = document.getElementById('videoFeed');
       feed.src = '/video_feed?t=' + new Date().getTime();
@@ -448,22 +578,36 @@
       document.getElementById('systemStatus').style.color = '#ef4444';
     }
 
-    function toggleCamera() {
-      alert("Camera is streaming directly from laptop webcam index 0. You can also upload test images below!");
-    }
-
-    // Poll live predictions from backend API
+    // Poll live predictions from backend API and sync active model state
     async function pollStats() {
       try {
         const res = await fetch('/api/status');
         if (res.ok) {
           const data = await res.json();
-          document.getElementById('gestureName').innerText = data.display_name || 'No hand detected';
-          document.getElementById('confidenceText').innerText = (data.confidence * 100).toFixed(1) + '%';
-          document.getElementById('confidenceBar').style.width = (data.confidence * 100) + '%';
-          document.getElementById('handednessVal').innerText = data.handedness || 'None';
-          document.getElementById('handsCountVal').innerText = data.num_hands || '0';
-          document.getElementById('fps-counter').innerText = 'FPS: ' + (data.fps || 0).toFixed(1);
+          document.getElementById('fpsCounter').innerText = 'FPS: ' + (data.fps || 0).toFixed(1);
+          updateCameraUI(data.camera_active);
+
+          // If backend model differs from current UI, sync it
+          if (data.active_model && data.active_model !== currentModel) {
+            currentModel = data.active_model;
+            applyModelUI(currentModel);
+          }
+
+          if (data.active_model === 'mediapipe') {
+            document.getElementById('heroOutput').innerText = data.display_name || 'No hand detected';
+            const confPct = ((data.confidence || 0) * 100).toFixed(1);
+            document.getElementById('confidenceText').innerText = confPct + '%';
+            document.getElementById('confidenceBar').style.width = confPct + '%';
+            document.getElementById('stat1Val').innerText = data.handedness || 'None';
+            document.getElementById('stat2Val').innerText = data.num_hands || '0';
+          } else if (data.active_model === 'yolov8') {
+            document.getElementById('heroOutput').innerText = data.top_class || 'None detected';
+            const confPct = ((data.top_confidence || 0) * 100).toFixed(1);
+            document.getElementById('confidenceText').innerText = confPct + '%';
+            document.getElementById('confidenceBar').style.width = confPct + '%';
+            document.getElementById('stat1Val').innerText = data.total_objects || '0';
+            document.getElementById('stat2Val').innerText = data.top_class || 'None';
+          }
         }
       } catch (err) {
         // silent catch
@@ -479,7 +623,7 @@
       const formData = new FormData();
       formData.append('image', file);
 
-      document.getElementById('gestureName').innerText = 'Processing...';
+      document.getElementById('heroOutput').innerText = 'Processing...';
 
       try {
         const res = await fetch('/api/predict_image', {
@@ -488,12 +632,24 @@
         });
         const data = await res.json();
         if (data.success) {
-          document.getElementById('gestureName').innerText = data.display_name;
-          document.getElementById('confidenceText').innerText = (data.confidence * 100).toFixed(1) + '%';
-          document.getElementById('confidenceBar').style.width = (data.confidence * 100) + '%';
-          document.getElementById('handednessVal').innerText = data.handedness;
-          document.getElementById('handsCountVal').innerText = data.num_hands;
-          alert(`Image Prediction:\nGesture: ${data.display_name}\nConfidence: ${(data.confidence*100).toFixed(1)}%\nHandedness: ${data.handedness}`);
+          if (data.model === 'mediapipe') {
+            document.getElementById('heroOutput').innerText = data.display_name;
+            const conf = ((data.confidence || 0) * 100).toFixed(1);
+            document.getElementById('confidenceText').innerText = conf + '%';
+            document.getElementById('confidenceBar').style.width = conf + '%';
+            document.getElementById('stat1Val').innerText = data.handedness;
+            document.getElementById('stat2Val').innerText = data.num_hands;
+            alert(`MediaPipe Prediction:\nGesture: ${data.display_name}\nConfidence: ${conf}%\nHandedness: ${data.handedness}`);
+          } else if (data.model === 'yolov8') {
+            document.getElementById('heroOutput').innerText = data.top_class;
+            const conf = ((data.top_confidence || 0) * 100).toFixed(1);
+            document.getElementById('confidenceText').innerText = conf + '%';
+            document.getElementById('confidenceBar').style.width = conf + '%';
+            document.getElementById('stat1Val').innerText = data.total_objects;
+            document.getElementById('stat2Val').innerText = data.top_class;
+            const items = data.detected_objects.map(o => `${o.name} (${(o.confidence*100).toFixed(0)}%)`).join(', ');
+            alert(`YOLOv8 Prediction:\nTotal Objects: ${data.total_objects}\nTop Class: ${data.top_class}\nDetected: ${items || 'None'}`);
+          }
         } else {
           alert('Error: ' + data.error);
         }

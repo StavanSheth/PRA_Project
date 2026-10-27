@@ -1,26 +1,41 @@
 """
-Controller orchestrating CameraService, ModelService, and GUI via thread-safe queues.
-Ensures non-blocking inference and main-thread Tkinter updates.
+Controller orchestrating CameraService, MediaPipe ModelService, YOLOv8, and Tkinter GUI via thread-safe queues.
+Ensures non-blocking inference, model switching, and main-thread Tkinter updates.
 """
 
+import os
 import queue
 import sys
 import threading
 from collections import Counter
-from app.config import SMOOTHING_WINDOW_SIZE, COLOR_DANGER, COLOR_SUCCESS, COLOR_WARNING
+from ultralytics import YOLO
+
+from app.config import (
+    BASE_DIR,
+    SMOOTHING_WINDOW_SIZE,
+    COLOR_DANGER,
+    COLOR_SUCCESS,
+    COLOR_WARNING,
+)
 from app.model_service import ModelService, GestureResultData
 from app.camera_service import CameraService
 
+YOLO_PATH = os.path.join(BASE_DIR, "yolov8n.pt")
+
 
 class GestureAppController:
-    """Coordinates lifecycle, thread-safe communication, and prediction smoothing."""
+    """Coordinates lifecycle, multi-model execution (MediaPipe & YOLOv8), and GUI synchronization."""
 
     def __init__(self, root):
         self.root = root
-        self.gui = None  # Injected after GUI instantiation
+        self.gui = None
 
         # Thread-safe queue for delivering frames & predictions to GUI main thread
         self.display_queue = queue.Queue(maxsize=2)
+
+        # Active model mode: "mediapipe" or "yolov8"
+        self.active_model = "mediapipe"
+        self.model_lock = threading.Lock()
 
         # Services
         self.model_service = ModelService()
@@ -28,6 +43,15 @@ class GestureAppController:
             on_frame_callback=self._on_camera_frame,
             on_error_callback=self._on_camera_error,
         )
+
+        # YOLOv8 model initialization
+        self.yolo_model = None
+        try:
+            if os.path.exists(YOLO_PATH):
+                self.yolo_model = YOLO(YOLO_PATH)
+                print(f"[Controller] Loaded YOLOv8 from {YOLO_PATH}")
+        except Exception as e:
+            print(f"[Controller] Warning: Could not load YOLOv8: {e}")
 
         # Latest shared prediction state from MediaPipe callback
         self._latest_gesture_data = GestureResultData()
@@ -42,6 +66,19 @@ class GestureAppController:
         """Sets the GUI reference."""
         self.gui = gui
 
+    def switch_model(self, model_key: str):
+        """Switches active model between MediaPipe and YOLOv8."""
+        with self.model_lock:
+            self.active_model = model_key
+            self._recent_predictions.clear()
+
+        if self.gui:
+            self.gui.apply_model_ui(model_key)
+            if model_key == "mediapipe":
+                self.gui.set_status("Active Model: Google MediaPipe Gesture Recognizer", COLOR_SUCCESS, COLOR_SUCCESS)
+            else:
+                self.gui.set_status("Active Model: Ultralytics YOLOv8 Nano (yolov8n.pt)", COLOR_SUCCESS, COLOR_SUCCESS)
+
     def set_smoothing_enabled(self, enabled: bool):
         """Toggles rolling window prediction smoothing."""
         self.smoothing_enabled = enabled
@@ -49,7 +86,7 @@ class GestureAppController:
 
     def initialize_model_async(self):
         """Loads MediaPipe model bundle on background thread at startup."""
-        self.gui.set_status("Loading MediaPipe Gesture Recognizer model...", COLOR_WARNING, COLOR_WARNING)
+        self.gui.set_status("Loading models (MediaPipe & YOLOv8)...", COLOR_WARNING, COLOR_WARNING)
 
         def _worker():
             try:
@@ -63,7 +100,7 @@ class GestureAppController:
 
     def _on_model_loaded_success(self):
         """Called on main thread when model loads successfully."""
-        self.gui.set_status("Model loaded successfully. Camera Ready.", COLOR_SUCCESS, COLOR_SUCCESS)
+        self.gui.set_status("Models loaded successfully. Camera Ready.", COLOR_SUCCESS, COLOR_SUCCESS)
         self.gui.btn_start.config(state="normal")
 
     def _on_model_loaded_failed(self, error_msg):
@@ -109,23 +146,58 @@ class GestureAppController:
         if not self._is_running:
             return
 
-        # 1. Asynchronously submit RGB frame to MediaPipe GestureRecognizer
-        self.model_service.recognize_async(rgb_frame, timestamp_ms)
+        with self.model_lock:
+            curr_model = self.active_model
 
-        # 2. Get the latest available prediction
-        with self._gesture_lock:
-            current_gesture = self._latest_gesture_data
+        if curr_model == "mediapipe":
+            # 1. Asynchronously submit RGB frame to MediaPipe GestureRecognizer
+            try:
+                self.model_service.recognize_async(rgb_frame, timestamp_ms)
+            except Exception:
+                pass
 
-        # 3. Apply smoothing if enabled
-        smoothed_gesture = self._apply_smoothing(current_gesture)
+            # 2. Get the latest available prediction
+            with self._gesture_lock:
+                current_gesture = self._latest_gesture_data
 
-        # 4. Push to display queue (drop oldest if queue is full to avoid latency)
+            # 3. Apply smoothing if enabled
+            payload = self._apply_smoothing(current_gesture)
+
+        elif curr_model == "yolov8" and self.yolo_model is not None:
+            # Run YOLOv8 inference directly on BGR frame
+            detected_items = []
+            try:
+                results = self.yolo_model(frame_bgr, conf=0.35, verbose=False)[0]
+                if results.boxes is not None:
+                    for box in results.boxes:
+                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                        cls_id = int(box.cls[0].item())
+                        conf = float(box.conf[0].item())
+                        name = self.yolo_model.names.get(cls_id, str(cls_id))
+                        detected_items.append({
+                            "name": name,
+                            "confidence": conf,
+                            "bbox": (x1, y1, x2, y2)
+                        })
+            except Exception as e:
+                print(f"[Controller YOLO Error] {e}")
+
+            payload = {
+                "detected_objects": detected_items,
+                "total_objects": len(detected_items),
+                "top_class": detected_items[0]["name"] if detected_items else "None detected",
+                "top_confidence": detected_items[0]["confidence"] if detected_items else 0.0,
+            }
+        else:
+            payload = None
+
+        # 4. Push to display queue (drop oldest if full)
         try:
-            self.display_queue.put_nowait((frame_bgr, smoothed_gesture, fps))
+            self.display_queue.put_nowait((frame_bgr, payload, fps, curr_model))
         except queue.Full:
             try:
                 _ = self.display_queue.get_nowait()
-                self.display_queue.put_nowait((frame_bgr, smoothed_gesture, fps))
+                self.display_queue.put_nowait((frame_bgr, payload, fps, curr_model))
             except Exception:
                 pass
 
@@ -148,7 +220,6 @@ class GestureAppController:
         names = [d.gesture_name for d in self._recent_predictions]
         most_common_name, _ = Counter(names).most_common(1)[0]
 
-        # Use the latest item with that name for display
         for item in reversed(self._recent_predictions):
             if item.gesture_name == most_common_name:
                 return item
@@ -162,12 +233,11 @@ class GestureAppController:
 
         try:
             while True:
-                frame_bgr, gesture_data, fps = self.display_queue.get_nowait()
-                self.gui.update_frame(frame_bgr, gesture_data, fps)
+                frame_bgr, payload, fps, model_type = self.display_queue.get_nowait()
+                self.gui.update_frame(frame_bgr, payload, fps, model_type)
         except queue.Empty:
             pass
 
-        # Schedule next refresh cycle (~60 Hz GUI loop)
         self.root.after(16, self._poll_display_queue)
 
     def _on_camera_error(self, error_message):
