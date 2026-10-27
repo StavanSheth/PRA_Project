@@ -81,9 +81,28 @@ python -m unittest discover tests
 ```
 *Note: On first execution, the test suite or application will automatically download `models/gesture_recognizer.task` (~8.3 MB) from Google's official Cloud Storage bucket.*
 
-### 4. Launch Application
+### 4. Launch Options
+
+#### Option A: One-Click Desktop Icon (Recommended)
+Double-click the **Hand Gesture Studio** icon directly on your Windows Desktop!
+- Silently launches the Python backend in the background (no console popups).
+- Opens Google Chrome in standalone app mode (`--app=http://localhost:5000`) without browser tabs or URL bars.
+- Automatically stops the backend server and releases your webcam when the window is closed.
+
+*If you need to re-create the desktop shortcut:*
+```powershell
+python scripts/create_desktop_shortcut.py
+```
+
+#### Option B: Standalone Desktop Window (Tkinter)
 ```powershell
 python main.py
+```
+
+#### Option C: Manual Web Server
+```powershell
+python server.py
+# Access at http://localhost:5000
 ```
 
 ---
